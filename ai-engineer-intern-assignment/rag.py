@@ -1,15 +1,12 @@
-import json 
+import json
 import re
-
 from dataclasses import dataclass
 from pathlib import Path
-
 from rank_bm25 import BM25Okapi
 
 CORPUS_DIR = Path(__file__).parent/"corpus"
-
 CHUNK_TARGET_CHARS = 700
-CHUNK_MAX_CHARS = 1100 
+CHUNK_MAX_CHARS = 1100
 TOP_K = 5
 
 STOPWORDS = {
@@ -41,7 +38,7 @@ def tokenize(text: str) -> list[str]:
 
 @dataclass
 class Chunk:
-    doc: str 
+    doc: str
     idx: int
     text: str
     tokens: list[str]
@@ -109,10 +106,10 @@ class Index:
             self.chunks.extend(chunk_document(name, p.read_text(encoding="utf-8")))
 
     def search (self, question: str, k: int = TOP_K) -> list[tuple[Chunk, float]]:
-
         scores = self.bm25.get_scores(tokenize(question))
         order = sorted(range(len(scores)), key= lambda i: scores[i], reverse=True)[:k]
-        return [(self.chunks[i], float(scores[i])) for i in order]                                                                       
+        return [(self.chunks[i], float(scores[i])) for i in order]
+
     def stats(self) -> dict:
         sizes = [len(c.text) for c in self.chunks]
         return {
@@ -132,18 +129,3 @@ def get_index() -> Index:
 
 def retrieve(question:str, k: int = TOP_K)-> list[tuple[Chunk,float]]:
     return get_index().search(question,k)
-
-if __name__ == "__main__":
-    ix = get_index()
-    print(json.dumps(ix.stats(), indent=2)) 
-    for q in [
-        "What is the DIM divisor for international shipments?",
-        "What are the dock hours at the Newark facility?",
-        "What is Meridian's employee vacation policy?",
-    ]:
-        print ("=" *78)
-        print ("Q:", q)
-        for c, s in retrieve(q):
-            head = c.text.replace("\n", " ")[:95]
-            print(f" {s:6.2f} {c.cid:<32} {head}")
-
